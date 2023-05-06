@@ -13,7 +13,7 @@ const getFileSize = filePath => {
   });
 };
 
-const getFileFormat = (file) => path.extname(file.name).slice(1);
+const getFileFormat = file => path.extname(file.name).slice(1);
 const getFileName = file => path.basename(file.name, path.extname(file.name));
 
 readdir(SECRET_FOLDER_PATH, { withFileTypes: true })
