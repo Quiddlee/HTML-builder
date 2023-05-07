@@ -11,7 +11,7 @@ const readFileContent = filePath => {
   const read = createReadStream(filePath, 'utf8');
 
   const readStreamPromise = new Promise(resolve => {
-    read.on('data', async data => {
+    read.on('data', data => {
       resolve(data);
     });
   });
@@ -19,7 +19,7 @@ const readFileContent = filePath => {
   readStreamQueue.push(readStreamPromise);
 };
 
-readdir(STYLES_PATH, { withFileTypes: true }, async (err, files) => {
+readdir(STYLES_PATH, { withFileTypes: true }, (err, files) => {
   if (err) console.log(err);
 
   files.map(file => {
