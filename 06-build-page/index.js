@@ -107,7 +107,7 @@ const copyAssetsFolder = () => {
               filesOrDir => {
                 filesOrDir.forEach(file => {
                   const filePath = join(path, file.name);
-                  const destinationPath = join(join(distPath, file.name));
+                  const destinationPath = join(distPath, file.name);
 
                   if (file.isFile()) return copyFile(filePath, destinationPath);
 
