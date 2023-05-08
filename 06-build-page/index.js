@@ -1,20 +1,24 @@
 const { createReadStream, writeFile } = require('fs');
-const { mkdir } = require('fs/promises');
+const { readdir, mkdir, copyFile } = require('fs/promises');
 const { join, extname } = require('path');
-const { readdir, copyFile } = require('fs/promises');
 const path = require('path');
-
 
 const DIST_PATH = join(__dirname, 'project-dist');
 const components = new Map();
 const readQueue = new Set();
 
 const getFileFormat = file => path.extname(file.name);
+
 const createFile = (path, content) => {
   writeFile(path, content, err => {
     if (err) console.log(err);
   });
 };
+
+const createDistDir = () => {
+  return mkdir(DIST_PATH, { recursive: true });
+};
+
 const createDirectory = async path => {
   return await mkdir(path, { recursive: true });
 };
@@ -57,11 +61,6 @@ const mergeStyles = () => {
     });
 };
 
-const createDistDir = () => {
-  mkdir(DIST_PATH, { recursive: true }, () => {
-  });
-};
-
 const storeComponents = (readQueue) => {
   return Promise.all(readQueue)
     .then((data) => {
@@ -94,43 +93,56 @@ const copyAssetsFolder = () => {
   createDirectory(join(DIST_PATH, 'assets'))
     .then(
       () => {
-        readdir(join(__dirname, 'assets'))
-          .then(files => {
-            files.forEach(file => {
-              const filePath = join(join(__dirname, 'assets'), file);
-              const destinationPath = join(join(DIST_PATH, 'assets'), file);
+        const recursiveFolderRead = (path, distPath) => {
+          readdir(path, { withFileTypes: true })
+            .then(
+              filesOrDir => {
+                filesOrDir.forEach(file => {
+                  const filePath = join(path, file.name);
+                  const destinationPath = join(join(distPath, file.name));
 
-              copyFile(filePath, destinationPath);
-            });
-          });
+                  if (file.isFile()) return copyFile(filePath, destinationPath);
+
+
+                  createDirectory(join(distPath, file.name))
+                    .then(recursiveFolderRead.bind(null, filePath, destinationPath));
+                });
+              });
+        };
+
+        recursiveFolderRead(join(__dirname, 'assets'), join(DIST_PATH, 'assets'));
       });
 };
 
-readdir(join(__dirname, 'components'), { withFileTypes: true })
-  .then(
-    files => {
-      files.forEach(
-        file => {
-          if (!file.isFile() || getFileFormat(file) !== '.html') return;
+const fillTemplatesAndCreateIndexFile = () => {
+  readdir(join(__dirname, 'components'), { withFileTypes: true })
+    .then(
+      files => {
+        files.forEach(
+          file => {
+            if (!file.isFile() || getFileFormat(file) !== '.html') return;
 
-          readQueue.add([ file.name, readFile(join(__dirname, 'components', file.name)) ]);
-        });
-    })
-  .then(() => {
-    storeComponents(readQueue)
-      .then(() => {
-        const templatePath = join(__dirname, 'template.html');
-
-        readFile(templatePath)
-          .then(data => {
-            const html = fillTemplates(data);
-
-            createFile(join(DIST_PATH, 'index.html'), html);
+            readQueue.add([ file.name, readFile(join(__dirname, 'components', file.name)) ]);
           });
-      });
+      })
+    .then(() => {
+      storeComponents(readQueue)
+        .then(() => {
+          const templatePath = join(__dirname, 'template.html');
+
+          readFile(templatePath)
+            .then(data => {
+              const html = fillTemplates(data);
+
+              createFile(join(DIST_PATH, 'index.html'), html);
+            });
+        });
+    });
+};
+
+createDistDir()
+  .then(() => {
+    fillTemplatesAndCreateIndexFile();
+    mergeStyles();
+    copyAssetsFolder();
   });
-
-
-createDistDir();
-mergeStyles();
-copyAssetsFolder();
