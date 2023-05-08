@@ -1,4 +1,4 @@
-const { readdir, createReadStream, appendFile, writeFile } = require('fs');
+const { readdir, createReadStream, writeFile } = require('fs');
 const { join, extname } = require('path');
 
 const STYLES_PATH = join(__dirname, 'styles');
